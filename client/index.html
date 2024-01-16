@@ -1,13 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+    <title>Tabla de Actividades</title>
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            margin: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button {
+            padding: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        input {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Tabla de Actividades</h1>
+
+    <label for="dni">Ingrese DNI: </label>
+    <input type="text" id="dni" placeholder="dni" />
+
+    <button onclick="loadTableData()" type="button">Cargar Datos</button>
+
+    <table id="acttable">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>DNI</th>
+                <th>Edad</th>
+                <th>Actividad</th>
+                <th>Hora</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Datos de la tabla se llenarán aquí dinámicamente -->
+        </tbody>
+    </table>
+
+    <script>
+        // Puedes cambiar la URL del servidor GraphQL según tu configuración
+        const graphqlEndpoint = "http://localhost:4000/graphql";
+
+        // Función para hacer una consulta GraphQL al servidor
+        async function fetchData(query, variables) {
+            const response = await fetch(graphqlEndpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({ query, variables }),
+            });
+
+            const data = await response.json();
+            return data.data;
+        }
+
+        async function loadTableData() {
+            const dni = document.getElementById("dni").value;
+
+            const query = `
+        {
+          persona(dni: "${dni}") {
+            dni
+            nombre
+            edad
+          }
+          actividadesPorDNI(dni: "${dni}") {
+            nombre
+            hora
+          }
+        }
+      `;
+
+            const result = await fetchData(query, {});
+            const persona = result.persona;
+            const actividades = result.actividadesPorDNI;
+
+            const tableBody = document.querySelector("#acttable tbody");
+            tableBody.innerHTML = "";
+
+
+            // Añadir filas para actividades
+            actividades.forEach((actividad) => {
+                const rowActividad = tableBody.insertRow();
+                rowActividad.insertCell(0).textContent = persona.nombre;
+                rowActividad.insertCell(1).textContent = persona.dni;
+                rowActividad.insertCell(2).textContent = persona.edad;
+                rowActividad.insertCell(3).textContent = actividad.nombre;
+                rowActividad.insertCell(4).textContent = actividad.hora;
+            });
+        }
+    </script>
+</body>
+
 </html>

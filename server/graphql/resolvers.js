@@ -1,79 +1,78 @@
-import Project from "../models/Project.js";
-import Task from "../models/Task.js";
+import personas from "../models/person.js";
+import fs from "fs";
 
+
+// Lee los datos del archivo
+const data = fs.readFileSync('./server/data/info.txt', 'utf-8');
+const lines = data.split('\n');
+const archivo = './server/data/info.txt';
+const leerDatos = () => {
+	const data = fs.readFileSync(archivo, 'utf-8');
+	return data.split('\n').filter((line) => line.trim() !== '');
+};
+const escribirDatos = (datos) => {
+	fs.writeFileSync(archivo, datos.join('\n'), 'utf-8');
+};
 export const resolvers = {
 	Query: {
-		hello: () => "Hello world!",
-		projects: async () => {
-			return await Project.find();
+		hello: () => "Hello, GraphQL!",
+		personas: async () => await personas.find(),
+		persona: async (_, { dni }) => await personas.findOne({ dni }).exec(),
+		actividades: () => {
+			const actividades = lines
+				.filter((line) => line.trim() !== '')
+				.map((line) => {
+					const [DNI, nombre, hora] = line.split(',');
+					return { DNI, nombre, hora };
+				});
+
+			return actividades;
 		},
-		project: async (_, { _id }) => {
-			return await Project.findById(_id);
+		actividadesPorDNI: () => {
+			const actividades = lines
+				.filter((line) => line.trim() !== '')
+				.map((line) => {
+					const [DNI, nombre, hora] = line.split(',');
+					return { DNI, nombre, hora };
+				});
+
+			return actividades;
 		},
-		tasks: async () => {
-			return await Task.find();
-		},
-		task: async (_, { _id }) => {
-			return await Task.findById(_id);
-		},
+
 	},
 	Mutation: {
-		createProject: async (_, { name, description }) => {
-			const project = new Project({
-				name,
-				description,
-			});
-			const savedProject = project.save();
-			return savedProject;
-		},
-		deleteProject: async (_, { _id }) => {
-			const deletedProject = await Project.findByIdAndDelete(_id);
-			if (!deletedProject) throw new Error("Project not found");
-			return deletedProject;
-		},
-		updateProject: async (_, args) => {
-			const updatedProject = await Project.findByIdAndUpdate(
-				args._id,
-				args,
-				{ new: true }
-			);
-			if (!updatedProject) throw new Error("Project not found");
-			return updatedProject;
-		},
-		createTask: async (_, { title, projectId }) => {
-			const projectFound = await Project.findById(projectId);
-			if (!projectFound) {
-				throw new Error("Project not found");
-			}
+		crearActividad: (_, { DNI, nombre, hora }) => {
+			const nuevaActividad = { DNI, nombre, hora };
+			const lines = [...leerDatos(), `${DNI},${nombre},${hora}`];
+			escribirDatos(lines);
 
-			const task = new Task({
-				title,
-				projectId,
-			});
-			const savedTask = task.save();
-			return savedTask;
+			return nuevaActividad;
 		},
-		deleteTask: async (_, { _id }) => {
-			const deletedTask = await Task.findByIdAndDelete(_id);
-			if (!deletedTask) throw new Error("Task not found");
-			return deletedTask;
-		},
-		updateTask: async (_, args) => {
-			const updatedTask = await Task.findByIdAndUpdate(args._id, args, {
-				new: true,
+		createPersona: (_, { nombre, dni, edad }) => {
+			const persona = new personas({
+				nombre: nombre,
+				dni: dni,
+				edad: edad
 			});
-			if (!updatedTask) throw new Error("Task not found");
-			return updatedTask;
-		}
+			const savedPersona = persona.save();
+			console.log(`Persona created at ${new Date().toISOString()}`);
+			return savedPersona;
+		},
+		updatePersona: (_, { dni, nombre, edad }) => {
+			const personaIndex = personas.findIndex(persona => persona.dni === dni);
+			if (personaIndex !== -1) {
+				personas[personaIndex] = { ...personas[personaIndex], nombre, edad };
+				return personas[personaIndex];
+			}
+			return null;
+		},
+		deletePersona: (_, { dni }) => {
+			const personaIndex = personas.findIndex(persona => persona.dni === dni);
+			if (personaIndex !== -1) {
+				const deletedPersona = personas.splice(personaIndex, 1);
+				return deletedPersona[0];
+			}
+			return null;
+		},
 	},
-	Project: {
-		tasks: async (parent) => {
-			return await Task.find({ projectId: parent._id });
-		}
-	},
-	Task: {
-		project: async (parent) => {
-			return await Project.findById(parent.projectId);
-		}
-	}
 };

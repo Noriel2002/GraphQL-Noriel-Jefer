@@ -1,0 +1,6 @@
+DNI,Actividad,Hora
+123456789,Aeróbicos,08:00
+987654321,Yoga,09:30
+654321987,Natación,11:00
+789456123,Ciclismo,15:45
+71011555,noriel,20:00
